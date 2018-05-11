@@ -9,6 +9,10 @@
 #ifndef MFDefine_h
 #define MFDefine_h
 
+static NSString *devicesKeyPath = @"devicesKeyPath";
+static void *devicesContext = &devicesContext;
+
+
 #ifdef DEBUG
 #define MFLog(FORMAT, ...) fprintf(stderr,"%s:[Line %d]\t%s\n",[[NSString stringWithUTF8String:__PRETTY_FUNCTION__] UTF8String], __LINE__, [[NSString stringWithFormat:FORMAT, ##__VA_ARGS__] UTF8String]);
 #else

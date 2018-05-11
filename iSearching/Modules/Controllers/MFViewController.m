@@ -18,6 +18,8 @@
 @property (nonatomic,strong) NSMutableArray *devices;
 //连接状态
 @property (nonatomic,strong) UILabel *accessoryView;
+//刷新状态
+@property (nonatomic,strong) UIActivityIndicatorView *activityView;
 
 @end
 
@@ -29,18 +31,29 @@
                                                                               style:UIBarButtonItemStylePlain
                                                                              target:self
                                                                              action:@selector(refreshBluetooth)];
+//    self.navigationItem.rightBarButtonItem.enabled = NO;
     
-    _tableView = [[UITableView alloc]initWithFrame:self.view.bounds style:UITableViewStylePlain];
-    _tableView.delegate = self;
-    _tableView.dataSource = self;
-    [self.view addSubview:_tableView];
+    _tableView = ({
+        UITableView *tableView = [[UITableView alloc]initWithFrame:self.view.bounds style:UITableViewStylePlain];
+        tableView.delegate = self;
+        tableView.dataSource = self;
+        [self.view addSubview:tableView];
+        tableView;
+    });
+    
+    _activityView = ({
+        UIActivityIndicatorView *activityView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        [activityView startAnimating];
+        self.navigationItem.titleView = activityView;
+        activityView;
+    });
     
     @weakify(self)
     [self.viewModel bindViewModel:^(NSMutableArray *devices) {
         @strongify(self)
-        self.devices = devices;
-        [self.tableView reloadData];
     }];
+    
+    [self.viewModel addObserver:self forKeyPath:devicesKeyPath options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:devicesContext];
 }
 
 /**
@@ -59,7 +72,8 @@
 
 - (MFBlueManagerViewModel *)viewModel{
     if (!_viewModel) {
-        _viewModel = [[MFBlueManagerViewModel alloc] init];
+        NSDictionary *dic = [NSDictionary dictionaryWithObject:[NSMutableArray arrayWithCapacity:0] forKey:devicesKeyPath];
+        _viewModel = [[MFBlueManagerViewModel alloc] initWithDic:dic];
     }
     return _viewModel;
 }
@@ -97,6 +111,26 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     CBPeripheral *peripheral = self.devices[indexPath.row];
     [self.viewModel connect:peripheral];
+}
+
+#pragma mark 数组KVO
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    if (context == devicesContext) {
+        if ([keyPath isEqualToString:devicesKeyPath]) {
+            self.devices = (NSMutableArray *)object;
+            [self.tableView reloadData];
+            [self.activityView stopAnimating];
+            //        self.navigationItem.rightBarButtonItem.enabled = YES;
+        }
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+
+- (void)dealloc{
+    if (_viewModel) {
+        [_viewModel removeObserver:self forKeyPath:devicesKeyPath];
+    }
 }
 
 @end

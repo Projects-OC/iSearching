@@ -14,6 +14,8 @@ typedef void (^CBPeripheralsBlock) (NSMutableArray *);
 
 @property (nonatomic,copy) CBPeripheralsBlock peripheralsBlock;
 
+-(id)initWithDic:(NSDictionary *)dic;
+
 /**
  绑定viewModel
  */

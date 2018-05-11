@@ -33,6 +33,7 @@
 		04E72A4320A576F400D318C2 /* MFViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MFViewController.m; sourceTree = "<group>"; };
 		04E72A4920A5796000D318C2 /* MFBlueManagerViewModel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MFBlueManagerViewModel.h; sourceTree = "<group>"; };
 		04E72A4A20A5796000D318C2 /* MFBlueManagerViewModel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MFBlueManagerViewModel.m; sourceTree = "<group>"; };
+		04E72A4C20A596F500D318C2 /* MFNsEnum.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MFNsEnum.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +94,7 @@
 			children = (
 				04E72A3D20A5741B00D318C2 /* MFDefine.h */,
 				04E72A3E20A5742B00D318C2 /* MFPrefixHeader.pch */,
+				04E72A4C20A596F500D318C2 /* MFNsEnum.h */,
 			);
 			path = Define;
 			sourceTree = "<group>";

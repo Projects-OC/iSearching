@@ -17,7 +17,6 @@ static NSString *uuid_characteristic_receive = @"";
 //获取设备写入权限的UUID
 static NSString *uuid_characteristic_send = @"";
 
-static NSString *devicesKeyPath = @"devicesKeyPath";
 
 @interface MFBlueManagerViewModel()<CBCentralManagerDelegate,CBPeripheralDelegate>
 
@@ -36,6 +35,21 @@ static NSString *devicesKeyPath = @"devicesKeyPath";
 
 @implementation MFBlueManagerViewModel
 
+-(id)initWithDic:(NSDictionary *)dic
+{
+    self = [super init];
+    if (self) {
+        [self setValuesForKeysWithDictionary:dic];
+    }
+    
+    return self;
+}
+
+-(void)setValue:(id)value forUndefinedKey:(NSString *)key
+{
+    NSLog(@"undefine key ---%@",key);
+}
+
 - (void)bindViewModel:(CBPeripheralsBlock)block{
     /**
      去掉提示警告框
@@ -49,7 +63,6 @@ static NSString *devicesKeyPath = @"devicesKeyPath";
 - (NSMutableArray *)devices{
     if (!_devices) {
         _devices = [[NSMutableArray alloc] init];
-        [_devices addObserver:self forKeyPath:devicesKeyPath options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:NULL];
     }
     return _devices;
 }
@@ -276,17 +289,9 @@ static NSString *devicesKeyPath = @"devicesKeyPath";
     }
 }
 
-#pragma mark 数组KVO
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
-    if ([keyPath isEqualToString:devicesKeyPath]) {
-        _peripheralsBlock(self.devices);
-    }
+- (void)dealloc{
+    
 }
 
-- (void)dealloc{
-    if (self.devices) {
-        [self removeObserver:self forKeyPath:devicesKeyPath];
-    }
-}
 
 @end
