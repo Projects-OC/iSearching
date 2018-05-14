@@ -8,6 +8,7 @@
 
 #import "MFViewController.h"
 #import "MFBlueManagerViewModel.h"
+#import "MFPeripheralModel.h"
 
 @interface MFViewController ()<UITableViewDelegate,UITableViewDataSource>
 
@@ -15,7 +16,7 @@
 
 @property (nonatomic,strong) UITableView *tableView;
 //设备列表
-@property (nonatomic,strong) NSMutableArray *devices;
+@property (nonatomic,copy) NSArray <MFPeripheralModel *>*devices;
 //连接状态
 @property (nonatomic,strong) UILabel *accessoryView;
 //刷新状态
@@ -48,12 +49,13 @@
         activityView;
     });
     
+    [self.viewModel addObserver:self forKeyPath:modelDevices options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:modelDevicesContext];
+
     @weakify(self)
     [self.viewModel bindViewModel:^(NSMutableArray *devices) {
         @strongify(self)
     }];
     
-    [self.viewModel addObserver:self forKeyPath:devicesKeyPath options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:devicesContext];
 }
 
 /**
@@ -63,17 +65,16 @@
     [self.viewModel refreshBluetooth];
 }
 
-- (NSMutableArray *)devices{
+- (NSArray *)devices{
     if (!_devices) {
-        _devices = [[NSMutableArray alloc] init];
+        _devices = [[NSArray alloc] init];
     }
     return _devices;
 }
 
 - (MFBlueManagerViewModel *)viewModel{
     if (!_viewModel) {
-        NSDictionary *dic = [NSDictionary dictionaryWithObject:[NSMutableArray arrayWithCapacity:0] forKey:devicesKeyPath];
-        _viewModel = [[MFBlueManagerViewModel alloc] initWithDic:dic];
+        _viewModel = [[MFBlueManagerViewModel alloc] init];
     }
     return _viewModel;
 }
@@ -92,32 +93,41 @@
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
-    return 50;
+    return 60;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     NSString *identifier = NSStringFromClass([UITableViewCell class]);
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
-    if (cell == nil) {
+    if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier];
     }
-    CBPeripheral *peripheral = self.devices[indexPath.row];
-    cell.accessoryView = self.accessoryView;
-    cell.textLabel.text = peripheral.name;
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"uuid=%@\n rssi=%@",peripheral.identifier,peripheral.RSSI];
+    MFPeripheralModel *model = self.devices[indexPath.row];
+//    cell.accessoryView = self.accessoryView;
+    cell.textLabel.text = model.peripheral.name ?:@"名字为空";
+    cell.detailTextLabel.numberOfLines = 2;
+    
+    NSString *uuid = [model.peripheral.identifier UUIDString];
+    NSString *rssi = [model.RSSI stringValue];
+    NSString *str = [NSString stringWithFormat:@"%@\n%@",uuid,rssi];
+    NSMutableAttributedString *attribute = [[NSMutableAttributedString alloc]initWithString:str];
+    [cell.detailTextLabel setAttributedText:attribute];
+    
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
-    CBPeripheral *peripheral = self.devices[indexPath.row];
-    [self.viewModel connect:peripheral];
+    MFPeripheralModel *model = self.devices[indexPath.row];
+    [self.viewModel connect:model.peripheral];
 }
+
+
 
 #pragma mark 数组KVO
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
-    if (context == devicesContext) {
-        if ([keyPath isEqualToString:devicesKeyPath]) {
-            self.devices = (NSMutableArray *)object;
+    if (context == modelDevicesContext) {
+        if ([keyPath isEqualToString:modelDevices]) {
+            self.devices = self.viewModel.modelDevices;
             [self.tableView reloadData];
             [self.activityView stopAnimating];
             //        self.navigationItem.rightBarButtonItem.enabled = YES;
@@ -129,7 +139,7 @@
 
 - (void)dealloc{
     if (_viewModel) {
-        [_viewModel removeObserver:self forKeyPath:devicesKeyPath];
+        [_viewModel removeObserver:self forKeyPath:modelDevices];
     }
 }
 

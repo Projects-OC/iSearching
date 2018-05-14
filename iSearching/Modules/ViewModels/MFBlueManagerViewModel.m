@@ -4,9 +4,9 @@
 //
 //  Created by Mac on 2018/5/11.
 //  Copyright © 2018年 MF. All rights reserved.
-//
 
 #import "MFBlueManagerViewModel.h"
+#import "MFObject.h"
 
 //设备名称
 static NSString *peripheralName = @"";
@@ -26,29 +26,12 @@ static NSString *uuid_characteristic_send = @"";
 @property (nonatomic,strong) CBPeripheral *peripheral;
 /** 蓝牙设备读写操作服务  */
 @property (nonatomic,strong) CBCharacteristic *characteristic;
-/** 设备列表 */
-@property (nonatomic,strong) NSMutableArray <CBPeripheral *> *devices;
 /** 是否主动断开连接 */
 @property (nonatomic,assign) BOOL isInitiativeDisconnect;
 
 @end
 
 @implementation MFBlueManagerViewModel
-
--(id)initWithDic:(NSDictionary *)dic
-{
-    self = [super init];
-    if (self) {
-        [self setValuesForKeysWithDictionary:dic];
-    }
-    
-    return self;
-}
-
--(void)setValue:(id)value forUndefinedKey:(NSString *)key
-{
-    NSLog(@"undefine key ---%@",key);
-}
 
 - (void)bindViewModel:(CBPeripheralsBlock)block{
     /**
@@ -60,20 +43,20 @@ static NSString *uuid_characteristic_send = @"";
     _peripheralsBlock = block;
 }
 
-- (NSMutableArray *)devices{
-    if (!_devices) {
-        _devices = [[NSMutableArray alloc] init];
+- (NSMutableArray *)modelDevices{
+    if (!_modelDevices) {
+        _modelDevices = [[NSMutableArray alloc] init];
     }
-    return _devices;
+    return _modelDevices;
 }
 
 /**
  services 可传uuid数组，搜索指定设备
- options也可以写nil
+ options 扫描选项 常驻后台
  */
 - (void)refreshBluetooth{
     [_manager scanForPeripheralsWithServices:nil
-                                     options:@{CBCentralManagerScanOptionAllowDuplicatesKey : [NSNumber numberWithBool:YES]}];
+                                     options:nil/*@{CBCentralManagerScanOptionAllowDuplicatesKey : @(YES)}*/];
 }
 
 /**
@@ -90,10 +73,18 @@ static NSString *uuid_characteristic_send = @"";
     }
 }
 
+
+/**
+ 连接选项
+ CBConnectPeripheralOptionNotifyOnConnectionKey :当应用挂起时，如果有一个连接成功时，如果我们想要系统为指定的peripheral显示一个提示时，就使用这个key值。
+ CBConnectPeripheralOptionNotifyOnDisconnectionKey :当应用挂起时，如果连接断开时，如果我们想要系统为指定的peripheral显示一个断开连接的提示时，就使用这个key值。
+ CBConnectPeripheralOptionNotifyOnNotificationKey: 当应用挂起时，使用该key值表示只要接收到给定peripheral端的通知就显示一个提
+ */
 -(void)connect:(CBPeripheral *)peripheral{
     [_manager connectPeripheral:peripheral
-                        options:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
-                                                            forKey:CBConnectPeripheralOptionNotifyOnDisconnectionKey]];
+                        options:@{CBConnectPeripheralOptionNotifyOnConnectionKey : @(YES),
+                                 CBConnectPeripheralOptionNotifyOnDisconnectionKey : @(YES),
+                                 CBConnectPeripheralOptionNotifyOnNotificationKey : @(YES)}];
 }
 
 #pragma mark CBCentralManagerDelegate
@@ -101,12 +92,14 @@ static NSString *uuid_characteristic_send = @"";
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(nonnull CBPeripheral *)peripheral advertisementData:(nonnull NSDictionary<NSString *,id> *)advertisementData RSSI:(nonnull NSNumber *)RSSI{
     MFLog(@"已发现 peripheral: %@ rssi: %@, UUID: %@ advertisementData: %@ ", peripheral.name, RSSI, peripheral.identifier, advertisementData);
     _peripheral = peripheral;
-    // 扫描到设备之后停止扫描
-    [_manager stopScan];
-    
-    if (![self.devices containsObject:peripheral]) {
-        [[self.devices mutableArrayValueForKey:devicesKeyPath] addObject:peripheral];
+    MFPeripheralModel *model = [[MFPeripheralModel alloc] init];
+    model.peripheral = peripheral;
+    model.RSSI = RSSI;
+    model.advertisementData = advertisementData;
+    if (![self.modelDevices containsObject:model]) {
+        [[self mutableArrayValueForKey:modelDevices] addObject:model];
     }
+    [_manager stopScan];
 }
 
 //连接成功，扫描services
@@ -125,6 +118,7 @@ static NSString *uuid_characteristic_send = @"";
     int rssi = abs([RSSI intValue]);
     NSString *length = [NSString stringWithFormat:@"发现BLT4.0热点:%@,强度:%.1ddb",_peripheral,rssi];
     MFLog(@"距离：%@", length);
+    [MFObject LocalNotificationWithMessage:@"设备距离过远"];
 }
 
 //连接失败
@@ -135,7 +129,8 @@ static NSString *uuid_characteristic_send = @"";
 //设备断开连接
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error{
     //重连
-    [_manager connectPeripheral:peripheral options:nil];
+//    [_manager connectPeripheral:peripheral options:nil];
+    [MFObject LocalNotificationWithMessage:@"蓝牙断开连接"];
 }
 
 //获取当前蓝牙状态
@@ -188,10 +183,8 @@ static NSString *uuid_characteristic_send = @"";
     }
 }
 
-
-
 #pragma mark CBPeripheralDelegate
-//扫描service
+//已发现服务
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error{
     if (error) {
         MFLog(@"didDiscoverCharacteristicsForService：%@",error);
@@ -214,7 +207,7 @@ static NSString *uuid_characteristic_send = @"";
     }];
 }
 
-//发现characteristic
+//已发现特征
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error{
     if (error) {
         MFLog(@"didDiscoverCharacteristicsForService：%@",error);
@@ -245,6 +238,7 @@ static NSString *uuid_characteristic_send = @"";
     MFLog(@"%@",string);
 }
 
+//读数据 常更新
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error{
     if (error) {
         MFLog(@"Error didUpdateNotificationStateForCharacteristic: %@", error.localizedDescription);
@@ -271,8 +265,11 @@ static NSString *uuid_characteristic_send = @"";
     [peripheral setNotifyValue:NO forCharacteristic:characteristic];
 }
 
-//写数据
+//用于检测中心向外设写数据是否成功
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error{
+    if (error) {
+        NSLog(@"=======%@",error.userInfo);
+    }
     [peripheral readValueForCharacteristic:characteristic];
 }
 

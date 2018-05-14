@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0470F39020A9730F0059F5EB /* MFPeripheralModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 0470F38F20A9730F0059F5EB /* MFPeripheralModel.m */; };
+		0470F39320A98A6E0059F5EB /* notify.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0470F39120A98A6D0059F5EB /* notify.wav */; };
+		0470F39420A98A6E0059F5EB /* alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0470F39220A98A6D0059F5EB /* alarm.wav */; };
+		0470F39720A98D7A0059F5EB /* MFObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 0470F39620A98D7A0059F5EB /* MFObject.m */; };
 		04E72A2420A539B600D318C2 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 04E72A2320A539B600D318C2 /* AppDelegate.m */; };
 		04E72A2A20A539B600D318C2 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 04E72A2820A539B600D318C2 /* Main.storyboard */; };
 		04E72A2C20A539B700D318C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 04E72A2B20A539B700D318C2 /* Assets.xcassets */; };
@@ -18,6 +22,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0470F38E20A9730F0059F5EB /* MFPeripheralModel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MFPeripheralModel.h; sourceTree = "<group>"; };
+		0470F38F20A9730F0059F5EB /* MFPeripheralModel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MFPeripheralModel.m; sourceTree = "<group>"; };
+		0470F39120A98A6D0059F5EB /* notify.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = notify.wav; sourceTree = "<group>"; };
+		0470F39220A98A6D0059F5EB /* alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm.wav; sourceTree = "<group>"; };
+		0470F39520A98D7A0059F5EB /* MFObject.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MFObject.h; sourceTree = "<group>"; };
+		0470F39620A98D7A0059F5EB /* MFObject.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MFObject.m; sourceTree = "<group>"; };
 		04E72A1F20A539B600D318C2 /* iSearching.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iSearching.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		04E72A2220A539B600D318C2 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		04E72A2320A539B600D318C2 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -48,6 +58,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0470F38D20A972F30059F5EB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				0470F38E20A9730F0059F5EB /* MFPeripheralModel.h */,
+				0470F38F20A9730F0059F5EB /* MFPeripheralModel.m */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		04E72A1620A539B600D318C2 = {
 			isa = PBXGroup;
 			children = (
@@ -70,6 +89,8 @@
 			children = (
 				04E72A2220A539B600D318C2 /* AppDelegate.h */,
 				04E72A2320A539B600D318C2 /* AppDelegate.m */,
+				0470F39520A98D7A0059F5EB /* MFObject.h */,
+				0470F39620A98D7A0059F5EB /* MFObject.m */,
 				04E72A4520A578E300D318C2 /* Modules */,
 				04E72A3B20A573CF00D318C2 /* Define */,
 				04E72A2820A539B600D318C2 /* Main.storyboard */,
@@ -77,6 +98,8 @@
 				04E72A2D20A539B700D318C2 /* LaunchScreen.storyboard */,
 				04E72A3020A539B700D318C2 /* Info.plist */,
 				04E72A3120A539B700D318C2 /* main.m */,
+				0470F39220A98A6D0059F5EB /* alarm.wav */,
+				0470F39120A98A6D0059F5EB /* notify.wav */,
 			);
 			path = iSearching;
 			sourceTree = "<group>";
@@ -102,6 +125,7 @@
 		04E72A4520A578E300D318C2 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				0470F38D20A972F30059F5EB /* Models */,
 				04E72A4820A5793200D318C2 /* Views */,
 				04E72A4720A5792B00D318C2 /* Controllers */,
 				04E72A4620A5792400D318C2 /* ViewModels */,
@@ -165,6 +189,11 @@
 				TargetAttributes = {
 					04E72A1E20A539B600D318C2 = {
 						CreatedOnToolsVersion = 9.3;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -191,9 +220,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0470F39420A98A6E0059F5EB /* alarm.wav in Resources */,
 				04E72A2F20A539B700D318C2 /* LaunchScreen.storyboard in Resources */,
 				04E72A2C20A539B700D318C2 /* Assets.xcassets in Resources */,
 				04E72A2A20A539B600D318C2 /* Main.storyboard in Resources */,
+				0470F39320A98A6E0059F5EB /* notify.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -208,6 +239,8 @@
 				04E72A4B20A5796000D318C2 /* MFBlueManagerViewModel.m in Sources */,
 				04E72A4420A576F400D318C2 /* MFViewController.m in Sources */,
 				04E72A2420A539B600D318C2 /* AppDelegate.m in Sources */,
+				0470F39020A9730F0059F5EB /* MFPeripheralModel.m in Sources */,
+				0470F39720A98D7A0059F5EB /* MFObject.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

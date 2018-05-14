@@ -9,8 +9,8 @@
 #ifndef MFDefine_h
 #define MFDefine_h
 
-static NSString *devicesKeyPath = @"devicesKeyPath";
-static void *devicesContext = &devicesContext;
+static NSString *modelDevices = @"modelDevices";
+static void *modelDevicesContext = &modelDevicesContext;
 
 
 #ifdef DEBUG
