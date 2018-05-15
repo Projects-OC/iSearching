@@ -23,7 +23,7 @@ typedef void (^CBPeripheralsBlock) (NSMutableArray *);
 @interface MFBlueManagerViewModel : NSObject
 
 /** 设备列表 */
-@property (nonatomic,strong) NSMutableArray <MFPeripheralModel *> *modelDevices;
+@property (nonatomic,strong) NSMutableArray <CBPeripheral *> *modelDevices;
 
 @property (nonatomic,copy) CBPeripheralsBlock peripheralsBlock;
 

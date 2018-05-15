@@ -10,7 +10,7 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-static NSString *fileName = @"alarm.wav";
+static NSString *fileName = @"notify.wav";
 
 @implementation MFObject
 
@@ -18,9 +18,8 @@ static NSString *fileName = @"alarm.wav";
     if ([UIApplication sharedApplication].applicationState==UIApplicationStateBackground) {
         [[UIApplication sharedApplication] cancelAllLocalNotifications];
         UILocalNotification *alarm = [[UILocalNotification alloc] init];
-        alarm.alertBody = [NSString stringWithFormat:message];
+        alarm.alertBody = message;
         alarm.soundName = fileName;
-//        alarm.alertAction = @"确定";
         [[UIApplication sharedApplication] presentLocalNotificationNow:alarm];
     }else{
         NSString *path = [NSString stringWithFormat:@"%@/%@", [[NSBundle mainBundle] resourcePath], fileName];

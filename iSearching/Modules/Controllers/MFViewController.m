@@ -16,7 +16,7 @@
 
 @property (nonatomic,strong) UITableView *tableView;
 //设备列表
-@property (nonatomic,copy) NSArray <MFPeripheralModel *>*devices;
+@property (nonatomic,copy) NSArray <CBPeripheral *>*devices;
 //连接状态
 @property (nonatomic,strong) UILabel *accessoryView;
 //刷新状态
@@ -55,7 +55,6 @@
     [self.viewModel bindViewModel:^(NSMutableArray *devices) {
         @strongify(self)
     }];
-    
 }
 
 /**
@@ -102,13 +101,13 @@
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier];
     }
-    MFPeripheralModel *model = self.devices[indexPath.row];
+    CBPeripheral *peripheral = self.devices[indexPath.row];
 //    cell.accessoryView = self.accessoryView;
-    cell.textLabel.text = model.peripheral.name ?:@"名字为空";
+    cell.textLabel.text = peripheral.name ?:@"名字为空";
     cell.detailTextLabel.numberOfLines = 2;
     
-    NSString *uuid = [model.peripheral.identifier UUIDString];
-    NSString *rssi = [model.RSSI stringValue];
+    NSString *uuid = [peripheral.identifier UUIDString];
+    NSString *rssi = [peripheral.RSSI stringValue];
     NSString *str = [NSString stringWithFormat:@"%@\n%@",uuid,rssi];
     NSMutableAttributedString *attribute = [[NSMutableAttributedString alloc]initWithString:str];
     [cell.detailTextLabel setAttributedText:attribute];
@@ -117,8 +116,8 @@
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
-    MFPeripheralModel *model = self.devices[indexPath.row];
-    [self.viewModel connect:model.peripheral];
+    CBPeripheral *peripheral = self.devices[indexPath.row];
+    [self.viewModel connect:peripheral];
 }
 
 

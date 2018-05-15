@@ -17,7 +17,6 @@ static NSString *uuid_characteristic_receive = @"";
 //获取设备写入权限的UUID
 static NSString *uuid_characteristic_send = @"";
 
-
 @interface MFBlueManagerViewModel()<CBCentralManagerDelegate,CBPeripheralDelegate>
 
 /**  蓝牙对象 */
@@ -41,6 +40,16 @@ static NSString *uuid_characteristic_send = @"";
                                                     queue:nil
                                                   options:@{CBCentralManagerOptionShowPowerAlertKey : [NSNumber numberWithBool:NO]}];
     _peripheralsBlock = block;
+    NSUserDefaults *user = [NSUserDefaults standardUserDefaults];
+    
+    NSDictionary *dic = [user objectForKey:@"advertisementData"];
+    NSData *data = dic[@"kCBAdvDataManufacturerData"];
+    Byte *testByte = (Byte *)[data bytes];
+    // Byte数组转字符串
+    for (int i = 0; i < [data length]; i++) {
+        NSString *str = [NSString stringWithFormat:@"%02x", testByte[i]];
+        NSLog(@"byteData = %@", str);
+    }
 }
 
 - (NSMutableArray *)modelDevices{
@@ -63,7 +72,6 @@ static NSString *uuid_characteristic_send = @"";
  主动断开连接
  */
 - (void)cancelPeripheralConnection{
-    //如果已经连接外设，断开外设
     if (_peripheral) {
         [_manager cancelPeripheralConnection:_peripheral];
     }
@@ -76,11 +84,12 @@ static NSString *uuid_characteristic_send = @"";
 
 /**
  连接选项
- CBConnectPeripheralOptionNotifyOnConnectionKey :当应用挂起时，如果有一个连接成功时，如果我们想要系统为指定的peripheral显示一个提示时，就使用这个key值。
- CBConnectPeripheralOptionNotifyOnDisconnectionKey :当应用挂起时，如果连接断开时，如果我们想要系统为指定的peripheral显示一个断开连接的提示时，就使用这个key值。
- CBConnectPeripheralOptionNotifyOnNotificationKey: 当应用挂起时，使用该key值表示只要接收到给定peripheral端的通知就显示一个提
+ CBConnectPeripheralOptionNotifyOnConnectionKey :在连接成功后，程序被挂起，给出系统提示。
+ CBConnectPeripheralOptionNotifyOnDisconnectionKey :在程序挂起，蓝牙连接断开时，给出系统提示。
+ CBConnectPeripheralOptionNotifyOnNotificationKey: 在程序挂起后，收到 peripheral 数据时，给出系统提示。
  */
 -(void)connect:(CBPeripheral *)peripheral{
+    _peripheral = peripheral;
     [_manager connectPeripheral:peripheral
                         options:@{CBConnectPeripheralOptionNotifyOnConnectionKey : @(YES),
                                  CBConnectPeripheralOptionNotifyOnDisconnectionKey : @(YES),
@@ -91,15 +100,24 @@ static NSString *uuid_characteristic_send = @"";
 //扫描设备
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(nonnull CBPeripheral *)peripheral advertisementData:(nonnull NSDictionary<NSString *,id> *)advertisementData RSSI:(nonnull NSNumber *)RSSI{
     MFLog(@"已发现 peripheral: %@ rssi: %@, UUID: %@ advertisementData: %@ ", peripheral.name, RSSI, peripheral.identifier, advertisementData);
-    _peripheral = peripheral;
-    MFPeripheralModel *model = [[MFPeripheralModel alloc] init];
-    model.peripheral = peripheral;
-    model.RSSI = RSSI;
-    model.advertisementData = advertisementData;
-    if (![self.modelDevices containsObject:model]) {
-        [[self mutableArrayValueForKey:modelDevices] addObject:model];
+   //屏蔽不可连接
+    if(![advertisementData[@"kCBAdvDataIsConnectable"] boolValue]){
+        return;
     }
-    [_manager stopScan];
+
+    if ([[advertisementData allKeys] containsObject:@"kCBAdvDataManufacturerData"]) {
+
+    }
+
+    _peripheral = peripheral;
+//    MFPeripheralModel *model = [[MFPeripheralModel alloc] init];
+//    model.peripheral = peripheral;
+//    model.RSSI = RSSI;
+//    model.advertisementData = advertisementData;
+    if (![self.modelDevices containsObject:peripheral]) {
+        [[self mutableArrayValueForKey:modelDevices] addObject:peripheral];
+    }
+//    [_manager stopScan];
 }
 
 //连接成功，扫描services
@@ -123,7 +141,7 @@ static NSString *uuid_characteristic_send = @"";
 
 //连接失败
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error{
-    MFLog(@"%@ %@",peripheral.name,error.localizedDescription);
+    MFLog(@"连接失败%@ %@",peripheral.name,error.localizedDescription);
 }
 
 //设备断开连接
@@ -173,15 +191,27 @@ static NSString *uuid_characteristic_send = @"";
             [self refreshBluetooth];
         }
             break;
-            
-            
         default:{
             //未知错误
-            
         }
             break;
     }
 }
+
+- (void)centralManager:(CBCentralManager *)central willRestoreState:(NSDictionary<NSString *, id> *)dict{
+    MFLog(@"蓝牙状态即将重置：%@ - %zd",central , dict);
+    
+    //dict中会传入如下键值对
+    /*
+     3 //恢复连接的外设数组
+     4 NSString *const CBCentralManagerRestoredStatePeripheralsKey;
+     5 //恢复连接的服务UUID数组
+     6 NSString *const CBCentralManagerRestoredStateScanServicesKey;
+     7 //恢复连接的外设扫描属性字典数组
+     8 NSString *const CBCentralManagerRestoredStateScanOptionsKey;
+     9 */
+}
+
 
 #pragma mark CBPeripheralDelegate
 //已发现服务
@@ -220,9 +250,32 @@ static NSString *uuid_characteristic_send = @"";
     //连接指定设备
         [characteristics enumerateObjectsUsingBlock:^(CBCharacteristic *character, NSUInteger idx, BOOL * _Nonnull stop) {
 //            if ([[character.UUID UUIDString] isEqualToString:uuid_characteristic_receive]) {
-                self.characteristic = character;
-                // 拿到特征,和外围设备进行交互
-                [self notifyCharacteristic:peripheral characteristic:character];
+            self.characteristic = character;
+            
+            // 这是一个枚举类型的属性
+            CBCharacteristicProperties properties = character.properties;
+            if (properties & CBCharacteristicPropertyBroadcast) {
+                //如果是广播特性
+            }
+            
+            if (properties & CBCharacteristicPropertyRead) {
+                //如果具备读特性，即可以读取特性的value
+                [peripheral readValueForCharacteristic:character];
+            }
+            
+            if (properties & CBCharacteristicPropertyWriteWithoutResponse) {
+                //如果具备写入值不需要响应的特性
+                //这里保存这个可以写的特性，便于后面往这个特性中写数据
+            }
+            
+            if (properties & CBCharacteristicPropertyWrite) {
+                //如果具备写入值的特性，这个应该会有一些响应
+            }
+            
+            if (properties & CBCharacteristicPropertyNotify) {
+                //如果具备通知的特性，无响应
+                [peripheral setNotifyValue:YES forCharacteristic:character];
+            }
 //            }
         }];
 }
@@ -244,25 +297,11 @@ static NSString *uuid_characteristic_send = @"";
         MFLog(@"Error didUpdateNotificationStateForCharacteristic: %@", error.localizedDescription);
         return;
     }
-    
-    if (characteristic.isNotifying) {
+    CBCharacteristicProperties properties = characteristic.properties;
+    if (properties & CBCharacteristicPropertyRead) {
+        //如果具备读特性，即可以读取特性的value
         [peripheral readValueForCharacteristic:characteristic];
-    } else {
-        MFLog(@"Notification stopped on %@.  Disconnecting", characteristic);
-        [self.manager cancelPeripheralConnection:self.peripheral];
     }
-}
-
-//设置通知
--(void)notifyCharacteristic:(CBPeripheral *)peripheral characteristic:(CBCharacteristic *)characteristic{
-    //设置通知，数据通知会进入：didUpdateValueForCharacteristic方法
-    [peripheral setNotifyValue:YES forCharacteristic:characteristic];
-    [self.manager stopScan];
-}
-
-//取消通知
--(void)cancelNotifyCharacteristic:(CBPeripheral *)peripheral characteristic:(CBCharacteristic *)characteristic{
-    [peripheral setNotifyValue:NO forCharacteristic:characteristic];
 }
 
 //用于检测中心向外设写数据是否成功
